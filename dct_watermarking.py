@@ -5,15 +5,15 @@ import copy
 def get_energy(C):
   return np.sum(np.square(C))
 
-def get_band_representative_frequency(band_index, band_size, num_coeffs):
+def get_band_representative_frequency(band_index, band_size, num_coeffs, sr):
   start_freq = band_index*band_size*sr/(2*num_coeffs)
   end_freq = (band_index+1)*band_size*sr/(2*num_coeffs)
 
   return (start_freq+end_freq)/2
 
-def get_band_masking_energy(C, band_index, band_size, num_coeffs):
+def get_band_masking_energy(C, band_index, band_size, num_coeffs, sr):
 
-  freq = get_band_representative_frequency(band_index, band_size, num_coeffs)
+  freq = get_band_representative_frequency(band_index, band_size, num_coeffs, sr)
 
   bark_scale_freq = 13*np.arctan(0.00076*freq)+3.5*np.arctan((freq/7500)**2)
 
@@ -51,8 +51,8 @@ def energy_compensation(C, G2_ind, niT):
 
   return C_hat
 
-def embed_bits_in_band(C, watermark_bits, lv, band_index, band_size, lG1, num_coeffs):
-  delta = np.sqrt(get_band_masking_energy(C, band_index, band_size, num_coeffs))
+def embed_bits_in_band(C, watermark_bits, lv, band_index, band_size, lG1, num_coeffs, sr):
+  delta = np.sqrt(get_band_masking_energy(C, band_index, band_size, num_coeffs, sr))
   delta_sigma = np.sqrt(lv)*delta
 
   G1_ind, G2_ind = divide_band_into_groups(C, lG1)
@@ -69,10 +69,10 @@ def embed_bits_in_band(C, watermark_bits, lv, band_index, band_size, lG1, num_co
   C_hat = energy_compensation(C, G2_ind, niT)
   return C_hat, G1_ind
 
-def embed_bits_in_frame(C, watermark_bits, band_size, lG1):
+def embed_bits_in_frame(C, watermark_bits, band_size, lG1, sr):
   band1 = C[:band_size]
   C_hat = C[:]
-  C_hat[:band_size], G1_ind1 = embed_bits_in_band(band1, watermark_bits, 1, 0, band_size, lG1, len(C))
+  C_hat[:band_size], G1_ind1 = embed_bits_in_band(band1, watermark_bits, 1, 0, band_size, lG1, len(C), sr)
 
   return C_hat, G1_ind1
 
@@ -91,6 +91,12 @@ def smooth_transitions(original_frames, watermarked_frames, lf, lt):
         watermarked_frames[n][k] = original_frames[n][k] + bethas[n-1] + (alphas[n]-bethas[n-1])*(k+1)/(lt+1)
 
   return watermarked_frames
+
+def get_watermark_lenght(signal, lt, lw, lG1):
+    lf = lt+lw
+    signal_length = len(signal)
+    num_frames = signal_length//lf
+    return num_frames*lG1
 
 def dctb1_watermark_embedding(signal, watermark, sr=16000, lt=23, lw=1486, band_size=30, lG1=24, lG2=6):
   '''
@@ -128,7 +134,7 @@ def dctb1_watermark_embedding(signal, watermark, sr=16000, lt=23, lw=1486, band_
   watermarked_signal = copy.deepcopy(signal)
   for ind, frame in enumerate(frames):
     C = dct(frame[lt:], norm="ortho")
-    C_hat, G1_ind = embed_bits_in_frame(C, watermark[(ind*bits_per_frame):((ind+1)*bits_per_frame)], band_size, lG1)
+    C_hat, G1_ind = embed_bits_in_frame(C, watermark[(ind*bits_per_frame):((ind+1)*bits_per_frame)], band_size, lG1, sr)
     G1_inds.append(G1_ind)
 
     rframe = np.zeros(frame.shape)
@@ -141,7 +147,7 @@ def dctb1_watermark_embedding(signal, watermark, sr=16000, lt=23, lw=1486, band_
   return watermarked_signal, G1_inds
 
 
-def dctb1_watermark_detection(watermarked_signal, G1_inds, lt=23, lw=1486, band_size=30):
+def dctb1_watermark_detection(watermarked_signal, sr, G1_inds, lt=23, lw=1486, band_size=30):
   '''
   Parameters:
     watermarked_signal - 1D numpy array
@@ -153,7 +159,7 @@ def dctb1_watermark_detection(watermarked_signal, G1_inds, lt=23, lw=1486, band_
     detected watermark - 1D numpy array
   '''
   lf = lt+lw
-  signal_length = len(signal)
+  signal_length = len(watermarked_signal)
   num_frames = signal_length//lf
   frames = np.array_split(watermarked_signal[:(num_frames*lf)], num_frames)
   watermark_bits = []
@@ -162,7 +168,7 @@ def dctb1_watermark_detection(watermarked_signal, G1_inds, lt=23, lw=1486, band_
     C = dct(frame[lt:], norm="ortho")
     band1 = C[:band_size]
 
-    delta = np.sqrt(get_band_masking_energy(band1, 0, band_size, lw))
+    delta = np.sqrt(get_band_masking_energy(band1, 0, band_size, lw, sr))
 
     for k in G1_inds[ind]:
       if abs(C[k]/delta-np.floor(C[k]/delta)-0.5) < 0.25:
@@ -171,3 +177,26 @@ def dctb1_watermark_detection(watermarked_signal, G1_inds, lt=23, lw=1486, band_
         watermark_bits.append(0)
 
   return np.array(watermark_bits)
+
+# Testing main
+if __name__ == "__main__":
+  # Create a sine wave signal as test signal and an alternating bit sequence as watermark
+  fs = 16000
+  t = np.arange(0, 2, 1/fs)
+  test_signal = np.sin(2*np.pi*100*t)
+
+  # Parameters
+  lt = 23
+  lw = 1486
+  lG1 = 24
+  lG2 = 6
+  band_size = lG1+lG2
+
+  # Create watermark
+  watermark_lenght = get_watermark_lenght(signal=test_signal, lt=lt, lw=lw, lG1=lG1)
+  watermark = np.tile(np.array([1, 0]), watermark_lenght//2)
+
+  # Embed watermark
+  watermarked_signal, G1_inds = dctb1_watermark_embedding(signal=test_signal, watermark=watermark, band_size=band_size, lG1=lG1)
+
+  dumpvar = 1

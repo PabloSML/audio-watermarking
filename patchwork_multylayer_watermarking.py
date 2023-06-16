@@ -72,7 +72,7 @@ def patchwork_multilayer_watermark_embedding(signal, watermark, sr=16000):
 
   return watermarked_signal
   
-def patchwork_multilayer_watermark_detection(watermarked_signal, watermark_length=40):
+def patchwork_multilayer_watermark_detection(watermarked_signal, watermark_length=40, sr=16000):
   '''
   Parameters:
     watermarked_signal - 1D numpy array
@@ -115,3 +115,21 @@ def patchwork_multilayer_watermark_detection(watermarked_signal, watermark_lengt
       watermark_bits.append(1)
 
   return np.array(watermark_bits)
+
+def calculate_ber(watermark, watermark_detected):
+  return np.sum(watermark != watermark_detected)/len(watermark)
+
+# Testing main
+if __name__ == "__main__":
+  # Create a sine wave signal as test signal and an alternating bit sequence as watermark
+  sr = 16000
+  t = np.arange(0, 2, 1/sr)
+  test_signal = np.sin(2*np.pi*500*t)
+
+  watermark_patch = np.tile(np.array([1, 0]), len(test_signal)//32)
+
+  watermarked_signal_patch = patchwork_multilayer_watermark_embedding(signal=test_signal, watermark=watermark_patch, sr=sr)
+
+  detected_watermark_patch = patchwork_multilayer_watermark_detection(watermarked_signal=watermarked_signal_patch, watermark_length=len(watermark_patch), sr=sr)
+
+  print(f"BER = {calculate_ber(watermark_patch, detected_watermark_patch)*100:.2f}%")
