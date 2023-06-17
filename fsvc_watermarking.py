@@ -47,6 +47,8 @@ def fsvc_watermark_embedding(signal, watermark, sr=16000):
   Returns:
     watermarked signal - 1D numpy array
   '''
+  gamma1 = 0.136 # for 44.1 kHz sampling rate
+  gamma2 = 0.181 # for 44.1 kHz sampling rate
   gamma1 = gamma1 * sr/44100
   gamma2 = gamma2 * sr/44100
 
@@ -105,6 +107,8 @@ def fsvc_watermark_detection(watermarked_signal, watermark_length=40, sr=16000):
   Returns:
     detected watermark - 1D numpy array
   '''
+  gamma1 = 0.136 # for 44.1 kHz sampling rate
+  gamma2 = 0.181 # for 44.1 kHz sampling rate
   gamma1 = gamma1 * sr/44100
   gamma2 = gamma2 * sr/44100
 
