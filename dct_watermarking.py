@@ -92,7 +92,7 @@ def smooth_transitions(original_frames, watermarked_frames, lf, lt):
 
   return watermarked_frames
 
-def get_watermark_lenght(signal, lt, lw, lG1):
+def get_watermark_length(signal, lt, lw, lG1):
     lf = lt+lw
     signal_length = len(signal)
     num_frames = signal_length//lf
@@ -119,7 +119,7 @@ def dctb1_watermark_embedding(signal, watermark, sr=16000, lt=23, lw=1486, band_
 
   bits_per_frame = lG1
   if len(watermark) != num_frames*bits_per_frame:
-    print("Watermark length should be: ", num_frames*bits_per_frame)
+    print(f"Watermark length should be: {num_frames*bits_per_frame}, is {len(watermark)}")
     return None, None
 
   if band_size != lG1+lG2:
@@ -193,7 +193,7 @@ if __name__ == "__main__":
   band_size = lG1+lG2
 
   # Create watermark
-  watermark_lenght = get_watermark_lenght(signal=test_signal, lt=lt, lw=lw, lG1=lG1)
+  watermark_lenght = get_watermark_length(signal=test_signal, lt=lt, lw=lw, lG1=lG1)
   watermark = np.tile(np.array([1, 0]), watermark_lenght//2)
 
   # Embed watermark
