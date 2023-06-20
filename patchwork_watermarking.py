@@ -7,7 +7,7 @@ fe = 7000 # ending frequency for watermark embedding
 k1 = 0.195
 k2 = 0.08
 
-def patchwork_multilayer_watermark_embedding(signal, watermark, sr=16000):
+def patchwork_watermark_embedding(signal, watermark, sr=16000):
   '''
   Parameters:
     signal - 1D numpy array
@@ -72,7 +72,7 @@ def patchwork_multilayer_watermark_embedding(signal, watermark, sr=16000):
 
   return watermarked_signal
   
-def patchwork_multilayer_watermark_detection(watermarked_signal, watermark_length=40, sr=16000):
+def patchwork_watermark_detection(watermarked_signal, watermark_length=40, sr=16000):
   '''
   Parameters:
     watermarked_signal - 1D numpy array
@@ -128,8 +128,8 @@ if __name__ == "__main__":
 
   watermark_patch = np.tile(np.array([1, 0]), len(test_signal)//32)
 
-  watermarked_signal_patch = patchwork_multilayer_watermark_embedding(signal=test_signal, watermark=watermark_patch, sr=sr)
+  watermarked_signal_patch = patchwork_watermark_embedding(signal=test_signal, watermark=watermark_patch, sr=sr)
 
-  detected_watermark_patch = patchwork_multilayer_watermark_detection(watermarked_signal=watermarked_signal_patch, watermark_length=len(watermark_patch), sr=sr)
+  detected_watermark_patch = patchwork_watermark_detection(watermarked_signal=watermarked_signal_patch, watermark_length=len(watermark_patch), sr=sr)
 
   print(f"BER = {calculate_ber(watermark_patch, detected_watermark_patch)*100:.2f}%")

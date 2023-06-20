@@ -92,6 +92,21 @@ def smooth_transitions(original_frames, watermarked_frames, lf, lt):
 
   return watermarked_frames
 
+
+# def smooth_transitions(original_frames, watermarked_frames, lf, lt):
+
+#   alphas = np.zeros(len(original_frames))
+#   bethas = np.zeros(len(original_frames))
+
+#   for n in range(1,len(original_frames)):
+#     alphas[n] = watermarked_frames[n-1][lt+1] - original_frames[n-1][lt+1] # the first modified sample
+#     bethas[n] = watermarked_frames[n][0] - original_frames[n][0] # the last modified sample
+#     for k in range(1,lt):
+#         watermarked_frames[n-1][k] = original_frames[n-1][k] + bethas[n-1] + (alphas[n]-bethas[n-1])*(k)/(lt+1)
+
+#   return watermarked_frames
+
+
 def get_watermark_length(signal, lt, lw, lG1):
     lf = lt+lw
     signal_length = len(signal)
