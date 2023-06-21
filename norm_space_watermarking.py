@@ -68,8 +68,8 @@ def norm_space_watermark_detection(watermarked_signal, watermark_length=512, del
   segments = np.array_split(watermarked_signal, watermark_length)
   watermark_bits = []
 
-  for ind, segment in enumerate(segments):
-    cA1, cD1 = pywt.dwt(segment, 'db1')
+  for segment in segments:
+    cA1, _ = pywt.dwt(segment, 'db1')
 
     v = dct(cA1, norm='ortho')
 
@@ -85,3 +85,14 @@ def norm_space_watermark_detection(watermarked_signal, watermark_length=512, del
       watermark_bits.append(0.0)
 
   return np.array(watermark_bits)
+
+if __name__ == "__main__":
+  # Create a sine wave signal as test signal and an alternating bit sequence as watermark
+  fs = 44100
+  t = np.arange(0, 8, 1/fs)
+  test_signal = np.sin(2*np.pi*440*t)
+  watermark_ns = np.tile(np.array([1, 0]), 20)
+  watermarked_signal_ns = norm_space_watermark_embedding(signal=test_signal, watermark=watermark_ns, delta=0.01)
+  detected_watermark_ns = norm_space_watermark_detection(watermarked_signal=watermarked_signal_ns, watermark_length=len(watermark_ns), delta=0.01)
+  ber = np.sum(watermark_ns != detected_watermark_ns)/len(watermark_ns)
+  print("Bit error rate: ", ber)
